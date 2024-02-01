@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce API UI</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>E-commerce API UI</h1>
+
+    <form id="productForm">
+        <label for="productName">Product Name:</label>
+        <input type="text" id="productName" name="productName" required>
+        
+        <label for="productDescription">Product Description:</label>
+        <input type="text" id="productDescription" name="productDescription" required>
+
+        <label for="productPrice">Product Price:</label>
+        <input type="number" id="productPrice" name="productPrice" required>
+
+        <label for="variantName">Variant Name:</label>
+        <input type="text" id="variantName" name="variantName">
+
+        <label for="variantSku">Variant SKU:</label>
+        <input type="text" id="variantSku" name="variantSku">
+
+        <label for="variantAdditionalCost">Variant Additional Cost:</label>
+        <input type="number" id="variantAdditionalCost" name="variantAdditionalCost">
+
+        <label for="variantStockCount">Variant Stock Count:</label>
+        <input type="number" id="variantStockCount" name="variantStockCount">
+
+        <button type="button" onclick="createProduct()">Create Product</button>
+    </form>
+ <h2>Search Products</h2>
+
+    <label for="searchTerm">Search Term:</label>
+    <input type="text" id="searchTerm" name="searchTerm">
+    <button type="button" onclick="searchProducts()">Search</button>
+
+    <h2>Products</h2>
+    <h2>Products</h2>
+
+    <table id="productTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Variants</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="productTableBody"></tbody>
+    </table>
+
+    <script>
+        async function createProduct() {
+            const productName = document.getElementById('productName').value;
+            const productDescription = document.getElementById('productDescription').value;
+            const productPrice = document.getElementById('productPrice').value;
+
+            const variantName = document.getElementById('variantName').value;
+            const variantSku = document.getElementById('variantSku').value;
+            const variantAdditionalCost = document.getElementById('variantAdditionalCost').value;
+            const variantStockCount = document.getElementById('variantStockCount').value;
+
+            const productData = {
+                name: productName,
+                description: productDescription,
+                price: productPrice,
+                variants: [{
+                    name: variantName,
+                    sku: variantSku,
+                    additionalCost: variantAdditionalCost,
+                    stockCount: variantStockCount
+                }]
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(productData)
+                });
+
+                const result = await response.json();
+                console.log(result);
+
+                // Clear form fields
+                document.getElementById('productName').value = '';
+                document.getElementById('productDescription').value = '';
+                document.getElementById('productPrice').value = '';
+                document.getElementById('variantName').value = '';
+                document.getElementById('variantSku').value = '';
+                document.getElementById('variantAdditionalCost').value = '';
+                document.getElementById('variantStockCount').value = '';
+
+                // Refresh product table
+                getProducts();
+            } catch (error) {
+                console.error('Error creating product:', error);
+            }
+        }
+
+        async function getProducts() {
+            try {
+                const response = await fetch('http://localhost:3000/products');
+                const products = await response.json();
+
+                const productTableBody = document.getElementById('productTableBody');
+                productTableBody.innerHTML = '';
+
+                products.forEach(product => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${product._id}</td>
+                        <td>${product.name}</td>
+                        <td>${product.description}</td>
+                        <td>${product.price}</td>
+                        <td>${product.variants.map(v => v.name).join(', ')}</td>
+                        <td>
+                            <button onclick="deleteProduct('${product._id}')">Delete</button>
+                        </td>
+                    `;
+                    productTableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        }
+
+        async function deleteProduct(productId) {
+            try {
+                const response = await fetch(`http://localhost:3000/products/${productId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.status === 204) {
+                    // Refresh product table
+                    getProducts();
+                } else {
+                    console.error('Error deleting product:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error deleting product:', error);
+            }
+        }
+         async function searchProducts() {
+            const searchTerm = document.getElementById('searchTerm').value;
+
+            try {
+                const response = await fetch(`http://localhost:3000/products/search?term=${searchTerm}`);
+                const products = await response.json();
+
+                const productTableBody = document.getElementById('productTableBody');
+                productTableBody.innerHTML = '';
+
+                products.forEach(product => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${product._id}</td>
+                        <td>${product.name}</td>
+                        <td>${product.description}</td>
+                        <td>${product.price}</td>
+                        <td>${product.variants.map(v => v.name).join(', ')}</td>
+                        <td>
+                            <button onclick="deleteProduct('${product._id}')">Delete</button>
+                        </td>
+                    `;
+                    productTableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error searching products:', error);
+            }
+        }
+
+        // Initial load
+        getProducts();
+    </script>
+
+</body>
+</html>
